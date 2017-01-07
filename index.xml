@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Dani&#39;s Note</title>
+    <link>http://blog.postr.me/index.xml</link>
+    <description>Recent content on Dani&#39;s Note</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Sun, 08 Jan 2017 01:28:26 +0900</lastBuildDate>
+    <atom:link href="http://blog.postr.me/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>2017</title>
+      <link>http://blog.postr.me/2017/01/08/2017/</link>
+      <pubDate>Sun, 08 Jan 2017 01:28:26 +0900</pubDate>
+      
+      <guid>http://blog.postr.me/2017/01/08/2017/</guid>
+      <description>&lt;p&gt;꽤 오랫동안 블로그를 소홀이 여기며 버려졌던 워드프레스
+블로그에서 정적 기반 블로그 엔진으로 갈아탄 것을 계기고
+블로그를 제대로 써보려고 합니다.&lt;/p&gt;
+
+&lt;p&gt;(기존 데이터 마이그레이션은 추후 차차 해야지.)&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>index</title>
+      <link>http://blog.postr.me/content/</link>
+      <pubDate>Wed, 04 Jan 2017 02:23:45 +0900</pubDate>
+      
+      <guid>http://blog.postr.me/content/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>
