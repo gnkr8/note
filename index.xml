@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Dani&#39;s Notes</title>
+    <link>http://blog.postr.me/index.xml</link>
+    <description>Recent content on Dani&#39;s Notes</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Mon, 09 Jan 2017 21:53:33 +0900</lastBuildDate>
+    <atom:link href="http://blog.postr.me/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>GCP Hadoop</title>
+      <link>http://blog.postr.me/2017/01/09/gcp-hadoop/</link>
+      <pubDate>Mon, 09 Jan 2017 21:53:33 +0900</pubDate>
+      
+      <guid>http://blog.postr.me/2017/01/09/gcp-hadoop/</guid>
+      <description>
+
+&lt;p&gt;&lt;strong&gt;Google Cloud Platform&lt;/strong&gt;에서 하둡 클러스터를 만드는 방법을 소개합니다. 물론 직접 구성하는 방법도 있습니다.&lt;/p&gt;
+
+&lt;h2 id=&#34;bdutil&#34;&gt;bdutil&lt;/h2&gt;
+
+&lt;p&gt;GCP 초기엔 하둡 클러스터를 쉽게 만드는 방법으로는
+&lt;a href=&#34;https://cloud.google.com/hadoop/bdutil&#34;&gt;bdutil&lt;/a&gt;이 있습니다. 지금도 있긴한데 &lt;a href=&#34;https://github.com/GoogleCloudPlatform/bdutil&#34;&gt;깃헙&lt;/a&gt;가면 꾸준히 관리가 되긴하는데 일부 기능들은 안됩니다. 시간이 지나면서 안되는 기능들이 생깁니다. &lt;a href=&#34;https://github.com/GoogleCloudPlatform/bdutil/tree/master/platforms/hdp&#34;&gt;platforms/hdp&lt;/a&gt; 경우엔 안되기 시작했습니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://cloud.google.com/dataproc/&#34;&gt;Google DataProc&lt;/a&gt;이 없어서 썼지 불편합니다. 물론 추가 과금은 없습니다. bdutil은 불편함이 많았던 유틸이예요. 2015년 2분기부터 사용했고 대략 8개월 동안 썼던 것 같습니다.&lt;/p&gt;
+
+&lt;h2 id=&#34;dataproc&#34;&gt;DataProc&lt;/h2&gt;
+
+&lt;p&gt;Google Cloud Platform은 시간이 지날수록 눈에 띄게 좋아지는 플랫폼입니다. 그 중 하나로 &lt;a href=&#34;https://cloud.google.com/dataproc/&#34;&gt;Google DataProc&lt;/a&gt;입니다. DataProc 0.1, 0.2 부터 썼던 것 같습니다. 지금은 DataProc 1.1.x 까지 있습니다.&lt;/p&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;version&lt;/th&gt;
+&lt;th&gt;Includes&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;0.1&lt;/td&gt;
+&lt;td&gt;hadoop 2.7.1 &amp;amp; spark 1.5.0 &amp;amp; hive 1.0 &amp;amp; pig 0.14.10&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;0.2&lt;/td&gt;
+&lt;td&gt;hadoop 2.7.1 &amp;amp; spark 1.5.2 &amp;amp; hive 1.2 &amp;amp; pig 0.15.0&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;1.0&lt;/td&gt;
+&lt;td&gt;hadoop 2.7.3 &amp;amp; spark 1.6.2 &amp;amp; hive 1.2.1 &amp;amp; pig 0.15.0&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;1.1&lt;/td&gt;
+&lt;td&gt;hadoop 2.7.3 &amp;amp; spark 2.0.2 &amp;amp; hive 2.1.0 &amp;amp; pig 0.16.0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;strong&gt;preview&lt;/strong&gt; 버전도 있긴 합니다. 2017년 1월 기준 현재 &lt;strong&gt;1.1&lt;/strong&gt;이 기본 버전입니다.&lt;/p&gt;
+
+&lt;p&gt;그리고 major.minor 버전이 이렇고 계속 빌드 버전이 올라갑니다. 세부적인 내용은 &lt;a href=&#34;https://cloud.google.com/dataproc/docs/release-notes/service&#34;&gt;release note&lt;/a&gt;를 참고하세요.&lt;/p&gt;
+
+&lt;p&gt;아래 설명은 대부분 &lt;strong&gt;gcloud command&lt;/strong&gt;만 보이지만 실제로 &lt;a href=&#34;https://console.cloud.google.com/dataproc/clustersAdd&#34;&gt;Google DataProc Console&lt;/a&gt; 통해 GUI 형태로 생성가능하고 관리 가능합니다.&lt;/p&gt;
+
+&lt;h3 id=&#34;무료일-것-같지만-유료&#34;&gt;무료일 것 같지만 유료&lt;/h3&gt;
+
+&lt;p&gt;DataProc의 경우 compute engine 비용 외에 추가로 시간당 과금이며 vcore당 0.01달러를 받습니다. Preemptible worker를 활용해서 절약하면 되고 오래 쓰면 할인해줍니다.&lt;/p&gt;
+
+&lt;h3 id=&#34;initialization-actions&#34;&gt;Initialization actions&lt;/h3&gt;
+
+&lt;p&gt;DataProc 클러스터를 생성할 때 &lt;a href=&#34;https://github.com/GoogleCloudPlatform/dataproc-initialization-actions&#34;&gt;intialization actions&lt;/a&gt;을 통해 추가적인 작업을 처리할 수 있습니다.&lt;/p&gt;
+
+&lt;p&gt;생성하실 때 다음 스크립트들 포함시켜보세요. 그러면 함께 설치됩니다. 개인적으로 저는 &lt;strong&gt;presto&lt;/strong&gt;, &lt;strong&gt;tez&lt;/strong&gt;를 설치해서 씁니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;gcloud dataproc clusters create CLUSTER-NAME
+  --initialization-actions gs://bucket_name/initialization-actions/tez.sh
+  --initialization-action-timeout 15m
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;와 같이 실행하면 됩니다. &lt;strong&gt;comma&lt;/strong&gt;로 구분해서 여러개 설정가능하고 간단하게 수정해서 쓰셔도 됩니다.&lt;/p&gt;
+
+&lt;h3 id=&#34;preemptible-worker&#34;&gt;Preemptible Worker&lt;/h3&gt;
+
+&lt;p&gt;알아두면 좋은 기능 중 하나로 &lt;strong&gt;preemptible worker&lt;/strong&gt;가 있습니다. 매우 좋은 기능이니 적극 사용해보시길 바라요.
+쉽게말하면 저렴하게 임시로 워커를 늘릴 수 있습니다. 주기적으로 워커가 교체됩니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;gcloud dataproc clusters update NAME [--async]
+    [--num-preemptible-workers=NUM_PREEMPTIBLE_WORKERS]
+    [--num-workers=NUM_WORKERS] [GLOBAL-FLAG ...]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;preemptible worker&lt;/strong&gt;만 둘 수는 없고 최소 worker는 두대 있어야 합니다. 그리고 &lt;strong&gt;gcloud&lt;/strong&gt; 명령으로 임시 워커를 늘렸다 줄였다 하시면 됩니다. 상대적으로 매우 저렴한 비용으로 이용할 수 있습니다. 동일 성능의 machine type대비 할인이 80%까지 이루어집니다. (물론 월 100% 쓸 때 가정하면 할인 폭은 줄겠죠) &lt;a href=&#34;https://cloud.google.com/compute/pricing#machinetype&#34;&gt;compute pricing&lt;/a&gt;을 참고하세요.&lt;/p&gt;
+
+&lt;p&gt;기본적으로 &lt;strong&gt;HDFS&lt;/strong&gt;관련된 것은 구동되지않고 &lt;strong&gt;YARN Node Manager&lt;/strong&gt; 가 구동됩니다.&lt;/p&gt;
+
+&lt;h3 id=&#34;cluster-생성&#34;&gt;Cluster 생성&lt;/h3&gt;
+
+&lt;p&gt;아래처럼 &lt;strong&gt;gcloud&lt;/strong&gt;명령어로 생성할 수 있고 &lt;strong&gt;GCP Console&lt;/strong&gt;에서도 생성할 수 있습니다. 임의로 hdfs-site.xml, yarn-site.xml 등의 설정을 수정할 수 있는 기능이 &lt;strong&gt;&amp;ndash;properties&lt;/strong&gt; 옵션도 있으니 참고하십시오!&lt;/p&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;prefix&lt;/th&gt;
+&lt;th&gt;configuration&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;core&lt;/td&gt;
+&lt;td&gt;core-site.xml&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;hdfs&lt;/td&gt;
+&lt;td&gt;hdfs-site.xml&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;mapred&lt;/td&gt;
+&lt;td&gt;mapred-site.xml&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;yarn&lt;/td&gt;
+&lt;td&gt;yarn-site.xml&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;hive&lt;/td&gt;
+&lt;td&gt;hive-site.xml&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;pig&lt;/td&gt;
+&lt;td&gt;pig.properties&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;spark&lt;/td&gt;
+&lt;td&gt;spark-defaults.conf&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;&lt;strong&gt;High Availability&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;아직 &lt;strong&gt;베타&lt;/strong&gt;입니다. 숨겨져 있지만 &amp;ndash;num-masters 옵션으로 HA 설정이 가능합니다. (지금은 콘솔에도 나오기때문에 숨겨졌다고 쓰긴 애매하군요.) HA를 활성화하고 싶다면 &amp;ndash;num-masters 옵션을 3으로 설정하셔야합니다. HA모드로 설치하면 HA를 위해 추가적으로 &lt;strong&gt;Zookeeper&lt;/strong&gt;, &lt;strong&gt;JournalNode&lt;/strong&gt; 등이 &lt;strong&gt;NameNode&lt;/strong&gt; HA를 위해 설치됩니다.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://cloud.google.com/dataproc/docs/concepts/high-availability&#34;&gt;자세한 내용&lt;/a&gt;은 구글 문서에 자세히 나옵니다.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;    gcloud dataproc clusters create NAME [--async] [--bucket=BUCKET]
+        [--image-version=VERSION]
+        [--initialization-action-timeout=TIMEOUT; default=&amp;quot;10m&amp;quot;]
+        [--initialization-actions=CLOUD_STORAGE_URI,[CLOUD_STORAGE_URI,...]]
+        [--master-boot-disk-size=MASTER_BOOT_DISK_SIZE]
+        [--num-masters=NUM_MASTERS]
+        [--master-machine-type=MASTER_MACHINE_TYPE]
+        [--metadata=KEY=VALUE,[KEY=VALUE,...]]
+        [--num-master-local-ssds=NUM_MASTER_LOCAL_SSDS]
+        [--num-preemptible-workers=NUM_PREEMPTIBLE_WORKERS]
+        [--num-worker-local-ssds=NUM_WORKER_LOCAL_SSDS]
+        [--num-workers=NUM_WORKERS]
+        [--preemptible-worker-boot-disk-size=PREEMPTIBLE_WORKER_BOOT_DISK_SIZE]
+        [--properties=[PREFIX:PROPERTY=VALUE,...]] [--scopes=SCOPE,[SCOPE,...]]
+        [--service-account=SERVICE_ACCOUNT] [--tags=TAG,[TAG,...]]
+        [--worker-boot-disk-size=WORKER_BOOT_DISK_SIZE]
+        [--worker-machine-type=WORKER_MACHINE_TYPE] [--zone=ZONE, -z ZONE]
+        [--network=NETWORK | --subnet=SUBNET] [GLOBAL-FLAG ...]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;&amp;ndash;properties&lt;/strong&gt; 옵션 사용법은 아래와 같습니다. &lt;strong&gt;^;^&lt;/strong&gt; 이 값은 무슨 의미인가하면 &lt;strong&gt;list&lt;/strong&gt; 타입 또는 &lt;strong&gt;dict&lt;/strong&gt; 타입을 flag를 넘길 때 사용하는 특수 기능입니다. &lt;code&gt;gcloud topic escaping&lt;/code&gt; 참고하세요.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sh&#34;&gt;gcloud dataproc clusters create --properties \
+    &#39;^;^yarn:name=value;hive.metastore.uris=HOST:PORT&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;주의사항&#34;&gt;주의사항&lt;/h3&gt;
+
+&lt;p&gt;아직은 HA가 베타기때문에 &lt;strong&gt;intialization actions&lt;/strong&gt;이 제대로 동작하지 않는게 있습니다.&lt;/p&gt;
+
+&lt;h2 id=&#34;hdp-cdh&#34;&gt;HDP &amp;amp; CDH&lt;/h2&gt;
+
+&lt;p&gt;여러분들이 다 아시는 hortonworks 및 cloudera 업체에서 제공하는 것을 이용해서 생성 가능합니다.&lt;/p&gt;
+
+&lt;p&gt;이 부분은 나중에 써야겠어요.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>2017</title>
+      <link>http://blog.postr.me/2017/01/08/2017/</link>
+      <pubDate>Sun, 08 Jan 2017 01:28:26 +0900</pubDate>
+      
+      <guid>http://blog.postr.me/2017/01/08/2017/</guid>
+      <description>&lt;p&gt;꽤 오랫동안 블로그를 소홀이 여기며 버려졌던 워드프레스
+블로그에서 정적 기반 블로그 엔진으로 갈아탄 것을 계기고
+블로그를 제대로 써보려고 합니다.&lt;/p&gt;
+
+&lt;p&gt;(기존 데이터 마이그레이션은 추후 차차 해야지.)&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>index</title>
+      <link>http://blog.postr.me/content/</link>
+      <pubDate>Wed, 04 Jan 2017 02:23:45 +0900</pubDate>
+      
+      <guid>http://blog.postr.me/content/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

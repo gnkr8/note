@@ -1,0 +1,248 @@
+<!DOCTYPE html><html lang=ko><head><link href=/css/app.css rel=stylesheet></head><head lang="ko-kr">
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+	
+
+	<title>GCP Hadoop &mdash; Dani&#39;s Notes</title>
+	
+	<link rel="stylesheet" href="http://blog.postr.me/css/highlight.css" type="text/css" />
+	<link rel="stylesheet" href="http://blog.postr.me/css/app.css" type="text/css" />
+
+	
+
+	<link rel="shortcut icon" href="http://blog.postr.me/favicon.ico" type="image/x-icon"/>
+
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato%3A400%2C400italic%2C700%2C700italic%7CRaleway%3A400%2C500%2C600&#038;subset=latin%2Clatin-ext" type="text/css" media="all" />
+</head><body><div class=site><div class=site-wrapper><main class="content section-inner" role=main>
+<div class="post">
+	<h1 class="post__title">GCP Hadoop</h1>
+	
+
+<p><strong>Google Cloud Platform</strong>에서 하둡 클러스터를 만드는 방법을 소개합니다. 물론 직접 구성하는 방법도 있습니다.</p>
+
+<h2 id="bdutil">bdutil</h2>
+
+<p>GCP 초기엔 하둡 클러스터를 쉽게 만드는 방법으로는
+<a href="https://cloud.google.com/hadoop/bdutil">bdutil</a>이 있습니다. 지금도 있긴한데 <a href="https://github.com/GoogleCloudPlatform/bdutil">깃헙</a>가면 꾸준히 관리가 되긴하는데 일부 기능들은 안됩니다. 시간이 지나면서 안되는 기능들이 생깁니다. <a href="https://github.com/GoogleCloudPlatform/bdutil/tree/master/platforms/hdp">platforms/hdp</a> 경우엔 안되기 시작했습니다.</p>
+
+<p><a href="https://cloud.google.com/dataproc/">Google DataProc</a>이 없어서 썼지 불편합니다. 물론 추가 과금은 없습니다. bdutil은 불편함이 많았던 유틸이예요. 2015년 2분기부터 사용했고 대략 8개월 동안 썼던 것 같습니다.</p>
+
+<h2 id="dataproc">DataProc</h2>
+
+<p>Google Cloud Platform은 시간이 지날수록 눈에 띄게 좋아지는 플랫폼입니다. 그 중 하나로 <a href="https://cloud.google.com/dataproc/">Google DataProc</a>입니다. DataProc 0.1, 0.2 부터 썼던 것 같습니다. 지금은 DataProc 1.1.x 까지 있습니다.</p>
+
+<table>
+<thead>
+<tr>
+<th>version</th>
+<th>Includes</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>0.1</td>
+<td>hadoop 2.7.1 &amp; spark 1.5.0 &amp; hive 1.0 &amp; pig 0.14.10</td>
+</tr>
+
+<tr>
+<td>0.2</td>
+<td>hadoop 2.7.1 &amp; spark 1.5.2 &amp; hive 1.2 &amp; pig 0.15.0</td>
+</tr>
+
+<tr>
+<td>1.0</td>
+<td>hadoop 2.7.3 &amp; spark 1.6.2 &amp; hive 1.2.1 &amp; pig 0.15.0</td>
+</tr>
+
+<tr>
+<td>1.1</td>
+<td>hadoop 2.7.3 &amp; spark 2.0.2 &amp; hive 2.1.0 &amp; pig 0.16.0</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>preview</strong> 버전도 있긴 합니다. 2017년 1월 기준 현재 <strong>1.1</strong>이 기본 버전입니다.</p>
+
+<p>그리고 major.minor 버전이 이렇고 계속 빌드 버전이 올라갑니다. 세부적인 내용은 <a href="https://cloud.google.com/dataproc/docs/release-notes/service">release note</a>를 참고하세요.</p>
+
+<p>아래 설명은 대부분 <strong>gcloud command</strong>만 보이지만 실제로 <a href="https://console.cloud.google.com/dataproc/clustersAdd">Google DataProc Console</a> 통해 GUI 형태로 생성가능하고 관리 가능합니다.</p>
+
+<h3 id="무료일-것-같지만-유료">무료일 것 같지만 유료</h3>
+
+<p>DataProc의 경우 compute engine 비용 외에 추가로 시간당 과금이며 vcore당 0.01달러를 받습니다. Preemptible worker를 활용해서 절약하면 되고 오래 쓰면 할인해줍니다.</p>
+
+<h3 id="initialization-actions">Initialization actions</h3>
+
+<p>DataProc 클러스터를 생성할 때 <a href="https://github.com/GoogleCloudPlatform/dataproc-initialization-actions">intialization actions</a>을 통해 추가적인 작업을 처리할 수 있습니다.</p>
+
+<p>생성하실 때 다음 스크립트들 포함시켜보세요. 그러면 함께 설치됩니다. 개인적으로 저는 <strong>presto</strong>, <strong>tez</strong>를 설치해서 씁니다.</p>
+
+<pre><code class="language-sh">gcloud dataproc clusters create CLUSTER-NAME
+  --initialization-actions gs://bucket_name/initialization-actions/tez.sh
+  --initialization-action-timeout 15m
+</code></pre>
+
+<p>와 같이 실행하면 됩니다. <strong>comma</strong>로 구분해서 여러개 설정가능하고 간단하게 수정해서 쓰셔도 됩니다.</p>
+
+<h3 id="preemptible-worker">Preemptible Worker</h3>
+
+<p>알아두면 좋은 기능 중 하나로 <strong>preemptible worker</strong>가 있습니다. 매우 좋은 기능이니 적극 사용해보시길 바라요.
+쉽게말하면 저렴하게 임시로 워커를 늘릴 수 있습니다. 주기적으로 워커가 교체됩니다.</p>
+
+<pre><code class="language-sh">gcloud dataproc clusters update NAME [--async]
+    [--num-preemptible-workers=NUM_PREEMPTIBLE_WORKERS]
+    [--num-workers=NUM_WORKERS] [GLOBAL-FLAG ...]
+</code></pre>
+
+<p><strong>preemptible worker</strong>만 둘 수는 없고 최소 worker는 두대 있어야 합니다. 그리고 <strong>gcloud</strong> 명령으로 임시 워커를 늘렸다 줄였다 하시면 됩니다. 상대적으로 매우 저렴한 비용으로 이용할 수 있습니다. 동일 성능의 machine type대비 할인이 80%까지 이루어집니다. (물론 월 100% 쓸 때 가정하면 할인 폭은 줄겠죠) <a href="https://cloud.google.com/compute/pricing#machinetype">compute pricing</a>을 참고하세요.</p>
+
+<p>기본적으로 <strong>HDFS</strong>관련된 것은 구동되지않고 <strong>YARN Node Manager</strong> 가 구동됩니다.</p>
+
+<h3 id="cluster-생성">Cluster 생성</h3>
+
+<p>아래처럼 <strong>gcloud</strong>명령어로 생성할 수 있고 <strong>GCP Console</strong>에서도 생성할 수 있습니다. 임의로 hdfs-site.xml, yarn-site.xml 등의 설정을 수정할 수 있는 기능이 <strong>&ndash;properties</strong> 옵션도 있으니 참고하십시오!</p>
+
+<table>
+<thead>
+<tr>
+<th>prefix</th>
+<th>configuration</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>core</td>
+<td>core-site.xml</td>
+</tr>
+
+<tr>
+<td>hdfs</td>
+<td>hdfs-site.xml</td>
+</tr>
+
+<tr>
+<td>mapred</td>
+<td>mapred-site.xml</td>
+</tr>
+
+<tr>
+<td>yarn</td>
+<td>yarn-site.xml</td>
+</tr>
+
+<tr>
+<td>hive</td>
+<td>hive-site.xml</td>
+</tr>
+
+<tr>
+<td>pig</td>
+<td>pig.properties</td>
+</tr>
+
+<tr>
+<td>spark</td>
+<td>spark-defaults.conf</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>High Availability</strong></p>
+
+<p>아직 <strong>베타</strong>입니다. 숨겨져 있지만 &ndash;num-masters 옵션으로 HA 설정이 가능합니다. (지금은 콘솔에도 나오기때문에 숨겨졌다고 쓰긴 애매하군요.) HA를 활성화하고 싶다면 &ndash;num-masters 옵션을 3으로 설정하셔야합니다. HA모드로 설치하면 HA를 위해 추가적으로 <strong>Zookeeper</strong>, <strong>JournalNode</strong> 등이 <strong>NameNode</strong> HA를 위해 설치됩니다.</p>
+
+<p><a href="https://cloud.google.com/dataproc/docs/concepts/high-availability">자세한 내용</a>은 구글 문서에 자세히 나옵니다.</p>
+
+<pre><code class="language-sh">    gcloud dataproc clusters create NAME [--async] [--bucket=BUCKET]
+        [--image-version=VERSION]
+        [--initialization-action-timeout=TIMEOUT; default=&quot;10m&quot;]
+        [--initialization-actions=CLOUD_STORAGE_URI,[CLOUD_STORAGE_URI,...]]
+        [--master-boot-disk-size=MASTER_BOOT_DISK_SIZE]
+        [--num-masters=NUM_MASTERS]
+        [--master-machine-type=MASTER_MACHINE_TYPE]
+        [--metadata=KEY=VALUE,[KEY=VALUE,...]]
+        [--num-master-local-ssds=NUM_MASTER_LOCAL_SSDS]
+        [--num-preemptible-workers=NUM_PREEMPTIBLE_WORKERS]
+        [--num-worker-local-ssds=NUM_WORKER_LOCAL_SSDS]
+        [--num-workers=NUM_WORKERS]
+        [--preemptible-worker-boot-disk-size=PREEMPTIBLE_WORKER_BOOT_DISK_SIZE]
+        [--properties=[PREFIX:PROPERTY=VALUE,...]] [--scopes=SCOPE,[SCOPE,...]]
+        [--service-account=SERVICE_ACCOUNT] [--tags=TAG,[TAG,...]]
+        [--worker-boot-disk-size=WORKER_BOOT_DISK_SIZE]
+        [--worker-machine-type=WORKER_MACHINE_TYPE] [--zone=ZONE, -z ZONE]
+        [--network=NETWORK | --subnet=SUBNET] [GLOBAL-FLAG ...]
+</code></pre>
+
+<p><strong>&ndash;properties</strong> 옵션 사용법은 아래와 같습니다. <strong>^;^</strong> 이 값은 무슨 의미인가하면 <strong>list</strong> 타입 또는 <strong>dict</strong> 타입을 flag를 넘길 때 사용하는 특수 기능입니다. <code>gcloud topic escaping</code> 참고하세요.</p>
+
+<pre><code class="language-sh">gcloud dataproc clusters create --properties \
+    '^;^yarn:name=value;hive.metastore.uris=HOST:PORT'
+</code></pre>
+
+<h3 id="주의사항">주의사항</h3>
+
+<p>아직은 HA가 베타기때문에 <strong>intialization actions</strong>이 제대로 동작하지 않는게 있습니다.</p>
+
+<h2 id="hdp-cdh">HDP &amp; CDH</h2>
+
+<p>여러분들이 다 아시는 hortonworks 및 cloudera 업체에서 제공하는 것을 이용해서 생성 가능합니다.</p>
+
+<p>이 부분은 나중에 써야겠어요.</p>
+
+</div>
+ </main></div><div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+	<div class="sphinxsidebarwrapper">
+		<p class="logo">
+			<a href="http://blog.postr.me/">
+				<img class="logo" src="http://blog.postr.me/favicon.ico" alt="Logo"/>
+				<h1 class="logo logo-name">Dani&#39;s Notes</h1>
+			</a>
+		</p>
+		
+		
+
+		
+
+	<p>
+		<iframe src="https://ghbtns.com/github-btn.html?user=gnkr8&repo=note&type=watch&count=true&size=large"
+		allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+	</p>
+
+	
+
+	
+		
+
+		
+		<h3>Related Topics</h3>
+<ul>
+  <li><a href="http://blog.postr.me/">Home</a>
+    <ul>
+      <li>Previous: <a href="http://blog.postr.me/2017/01/08/2017/" title="2017">2017</a></li>
+      
+    </ul>
+  </li>
+</ul>
+
+	</div>
+</div>
+<div class="clearer"></div> <div class="footer">
+  Dani's Notes
+  |
+  Powered by <a href="http://gohugo.io/">Hugo 0.18.1</a>
+  &amp; <a target="_blank" href="https://github.com/digitalcraftsman/hugo-alabaster-theme">Alabaster</a>
+  
+</div>
+</div><div id=app></div><script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js></script><script>hljs.initHighlightingOnLoad();</script> 
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-90001153-1', 'auto');
+ga('send', 'pageview');
+</script>
+<script type=text/javascript src=/js/manifest.js></script><script type=text/javascript src=/js/vendor.js></script><script type=text/javascript src=/js/app.js></script></body></html>
